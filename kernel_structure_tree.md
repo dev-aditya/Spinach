@@ -1,0 +1,50 @@
+# Kernel structure overview (core vs specialized)
+
+```text
+kernel/
+├── cache/                [specialized: caching helpers]
+├── contexts/             [specialized: simulation contexts]
+├── conventions/          [specialized: naming/formatting conventions]
+├── grids/                [specialized: grids and quadratures]
+├── house_style/          [specialized: reporting/house style]
+├── includes/             [specialized: internal includes]
+├── integrity/            [specialized: consistency checks]
+├── kinetics/             [specialized: chemical kinetics]
+├── optimcon/             [specialized: optimal control]
+├── overloads/            [specialized: operator overloads]
+├── pulses/               [specialized: pulse and sequence tools]
+├── states/               [specialized: state generators]
+├── undocs/               [specialized: internal/undocumented]
+├── utilities/            [shared utilities used everywhere]
+│
+├── assume.m              [specialized helper]
+├── average.m             [core utility]
+├── basis.m               [core: state-space construction]
+├── carrier.m             [core utility]
+├── coherence.m           [core utility]
+├── correlation.m         [core utility]
+├── create.m              [core: build spin_system]
+├── decouple.m            [core spin operation]
+├── evolution.m           [core: time evolution]
+├── frqoffset.m           [core utility]
+├── hamiltonian.m         [core: Hamiltonian/Liouvillian]
+├── homospoil.m           [core spin operation]
+├── krylov.m              [specialized: Krylov propagation]
+├── operator.m            [core: operator construction]
+├── orientation.m         [core utility]
+├── propagator.m          [core: matrix exponential]
+├── reduce.m              [core utility]
+├── relaxation.m          [core: relaxation/kinetics]
+├── residual.m            [specialized helper]
+├── rotframe.m            [core utility]
+├── spin.m                [core spin definitions]
+├── spinlock.m            [core spin operation]
+├── steady.m              [core: steady-state solver]
+├── step.m                [core: propagation step]
+├── thermalize.m          [core: thermal state]
+├── trajan.m              [specialized: trajectory analysis]
+└── trajsimil.m           [specialized: trajectory similarity]
+```
+
+In this view, “core” entries are the ones you typically focus on first to understand the main data flow (system setup → operators/Hamiltonians → propagation and states). “Specialized” entries are feature-specific layers (pulses, optimal control, kinetics, caching, trajectories, etc.) that can be deferred until after the core is clear.
+
