@@ -51,23 +51,23 @@ control.offsets={[-10 0 10],[-10 0 10],[-10 0 10]};
 control.rho_init={rho_init};                      % Starting state
 control.rho_targ={rho_targ};                      % Destination state
 control.pulse_dt = dt * ones(1, n_t_steps);      % or column vector (nsteps×1)
-control.pwr_levels=2*pi*[1000 1200 1500];       % Power levels from 1000 - 1500 Hz
+control.pwr_levels=2*pi*1000;       % Power levels from 1000 - 1500 Hz
+control.amplitudes=ones(2, n_t_steps);
 control.method='lbfgs';                         % Optimisation method
 control.max_iter=200;                           % Termination condition
 control.parallel='ensemble';                    % Parallelisation
 
 % Plotting options
-control.plotting={'correlation_order','coherence_order',...
-                  'xy_controls','local_each_spin',...
-                  'spectrogram'};
+control.plotting={'correlation_order','coherence_order','local_each_spin',...
+                  'spectrogram', 'phi_controls', 'xy_controls'};
 
 % Initial guess
-guess=rand(numel(control.operators),n_t_steps)/4;
+guess=rand(2,n_t_steps)*pi/3;
 
 % Spinach housekeeping
 spin_system=optimcon(spin_system,control);
 
 % Run LBFGS GRAPE pulse optimisation
-xy_profile=fminnewton(spin_system,@grape_xy,guess);
+xy_profile=fminnewton(spin_system,@grape_phase,guess);
 
 end
