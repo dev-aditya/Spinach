@@ -1,65 +1,104 @@
 function broadband_refocusing_pulses()
+% Broadband refocusing (π) pulse for liquid-state 1H NMR.
+%
+% Spinach implementation of the broadband refocusing example from:
+%
+%   Z. Tošner, C. Kehlet, N. Khaneja, S.J. Glaser, N.C. Nielsen, J. Magn.
+%   Reson. 197 (2009) 120–134. http://dx.doi.org/10.1016/j.jmr.2008.11.020
+%
+% Task: design a 200 µs broadband x-phase π pulse
+%       {Sx -> Sx, Sy -> -Sy, Sz -> -Sz}
+% over an offset range of ±12.5 kHz with RF penalty.
+%
+% Authors:
+%   Aditya Dev  (aditya.dev@weizmann.ac.il) Ilya Kuprov
+%   (ilya.kuprov@weizmann.ac.il)
 
-T = 200e-6; % mu s
-n_t_steps = 600;
-dt = T/n_t_steps;
-sys.magnet=14.1; % Does it get affected by the offets values used below? 
+%---------------------------------------------------------------------------%
+% Spin system
+%---------------------------------------------------------------------------%
 
-sys.isotopes={'1H'};
-inter.zeeman.scalar={0.0}; % No zeeman shifts  i.e on resonance
+T          = 200e-6;                % pulse length, s
+n_t_steps  = 600;                   % time slices
+dt         = T / n_t_steps;
 
-bas.formalism='sphten-liouv';
-bas.approximation='IK-2';
-bas.space_level=1;
-bas.connectivity='scalar_couplings';
+sys.magnet   = 14.1;               % Tesla
+sys.isotopes = {'1H'};
+inter.zeeman.scalar = {0.0};       % on-resonance
 
-spin_system=create(sys,inter);
-spin_system=basis(spin_system,bas);
+bas.formalism     = 'sphten-liouv';
+bas.approximation = 'IK-2';
+bas.space_level   = 1;
+bas.connectivity  = 'scalar_couplings';
 
-% Set up spin states
-Sx=state(spin_system,'Lx',1);
-Sy=state(spin_system,'Ly',1);
-Sz=state(spin_system,'Lz',1);
-Sx=Sx/norm(full(Sx),2);
-Sy=Sy/norm(full(Sy),2);
-Sz=Sz/norm(full(Sz),2);
-% Get the control operators
-LxH=operator(spin_system,'Lx',1);
-LyH=operator(spin_system,'Ly',1);
+spin_system = create(sys, inter);
+spin_system = basis(spin_system, bas);
 
+%---------------------------------------------------------------------------%
+% States and operators
+%---------------------------------------------------------------------------%
 
-% Get offset operators
-LzH=operator(spin_system,'Lz',1);
+Sx = state(spin_system, 'Lx', 1);
+Sy = state(spin_system, 'Ly', 1);
+Sz = state(spin_system, 'Lz', 1);
 
-% Get the drift Hamiltonian
-H=hamiltonian(assume(spin_system,'nmr'));
+Sx = Sx / norm(full(Sx), 2);
+Sy = Sy / norm(full(Sy), 2);
+Sz = Sz / norm(full(Sz), 2);
 
-% Define control parameters
-control.drifts={{H}};                           % Drift
-control.operators={LxH,LyH};              % Controls
-control.off_ops={LzH};
-control.offsets={linspace(-12.5e2, 12.5e2, 10)}; % offsets in Hz
-control.rho_init={Sx Sy Sz};                      % Starting state
-control.rho_targ={Sx -Sy -Sz};                      % Destination state
-control.pulse_dt = dt * ones(1, n_t_steps);      % or column vector (nsteps×1)
-control.penalties={'NS'};
-control.p_weights = 0.01;
-control.pwr_levels=2*pi*15e3;       % rms power level
-control.amplitudes=ones(1, n_t_steps);
-control.method='lbfgs';                         % Optimisation method
-control.max_iter=200;                           % Termination condition
-control.parallel='ensemble';                    % Parallelisation
+% Multi-target refocusing: Rx(pi)
+rho_init = {Sx,  Sy,  Sz};
+rho_targ = {Sx, -Sy, -Sz};
 
-% Plotting options
-control.plotting={'phi_controls', 'xy_controls', 'amp_controls', 'level_populations'};
+Lx = operator(spin_system, 'Lx', 1);
+Ly = operator(spin_system, 'Ly', 1);
+Lz = operator(spin_system, 'Lz', 1);
 
-% Initial guess
-guess=rand(numel(control.operators),n_t_steps)*pi/3;
+H  = hamiltonian(assume(spin_system, 'nmr'));
 
-% Spinach housekeeping
-spin_system=optimcon(spin_system,control);
+%---------------------------------------------------------------------------%
+% Optimal control settings
+%---------------------------------------------------------------------------%
 
-% Run LBFGS GRAPE pulse optimisation
-xy_profile=fminnewton(spin_system,@grape_xy,guess);
+control.drifts    = {{H}};
+control.operators = {Lx, Ly};
+
+% Offset ensemble over ±12.5 kHz
+control.off_ops   = {Lz};
+control.offsets   = {linspace(-12.5e3, 12.5e3, 10)};  % Hz
+
+control.rho_init  = rho_init;
+control.rho_targ  = rho_targ;
+
+control.pulse_dt  = dt * ones(1, n_t_steps);
+
+% RF scale (max ~15 kHz)
+control.pwr_levels = 2*pi*15e3;
+
+% RF power penalty
+control.penalties  = {'NS'};
+control.p_weights  = 0.01;
+
+control.method     = 'lbfgs';
+control.max_iter   = 200;
+control.parallel   = 'ensemble';
+
+control.plotting   = {'phi_controls', ...
+    'xy_controls', ...
+    'amp_controls', ...
+    'level_populations'};
+
+%---------------------------------------------------------------------------%
+% Initial guess and optimisation
+%---------------------------------------------------------------------------%
+
+n_channels = numel(control.operators);
+guess      = (pi/3) * rand(n_channels, n_t_steps);
+
+% Set a flat initial amplitude profile for both channels
+control.amplitudes = ones(n_channels, n_t_steps);
+
+spin_system = optimcon(spin_system, control);
+xy_profile  = fminnewton(spin_system, @grape_xy, guess); %#ok<NASGU>
 
 end
