@@ -114,7 +114,7 @@ control.operators = {LxH, LyH};
 % sampling density.
 
 control.off_ops   = {LzH};
-control.offsets   = {linspace(-50e3, 50e3, 10)};   % offsets (Hz)
+control.offsets   = {2*pi*linspace(-50e3, 50e3, 10)};   % offsets (rads/s)
 
 %-----------------------------
 % 4.3 State-to-state objective
@@ -136,7 +136,8 @@ control.pwr_levels = 2*pi * 30e3;  % rad/s
 
 % Amplitude profile: grape_xy will optimise Cartesian amplitudes directly.
 % There are two RF channels (LxH, LyH), hence 2 × n_t_steps amplitudes.
-control.amplitudes = ones(1, n_t_steps);
+n_channels         = numel(control.operators);
+control.amplitudes = ones(n_channels, n_t_steps);
 
 %-----------------------------
 % 4.5 Penalties and optimisation settings

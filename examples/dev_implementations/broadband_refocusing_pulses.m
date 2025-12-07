@@ -65,7 +65,7 @@ control.operators = {Lx, Ly};
 
 % Offset ensemble over ±12.5 kHz
 control.off_ops   = {Lz};
-control.offsets   = {linspace(-12.5e3, 12.5e3, 10)};  % Hz
+control.offsets   = {2*pi*linspace(-12.5e3, 12.5e3, 10)};  % rads/s
 
 control.rho_init  = rho_init;
 control.rho_targ  = rho_targ;
